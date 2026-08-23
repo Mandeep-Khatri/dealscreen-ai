@@ -1,0 +1,104 @@
+{
+  "name": "Industrial Deal Screening Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "industrial-deal-screening",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5e8dd0f4-8441-4c1c-8d22-341924258bd1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "b07b09e9-c30a-485d-ab50-a3837e05e3bc",
+      "name": "Extract from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [224, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "e366b9f9-b053-4583-a6ac-cfcdcc7190d5",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [832, 0]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a commercial real estate underwriting analyst AI specializing in industrial real estate.\n\nAnalyze the Commercial Real Estate Offering Memorandum (OM) provided below and return structured deal-screening data using the connected Structured Output Parser.\n\nCORE RULES\n- Never guess, fabricate, estimate, assume, or invent numeric values not explicitly stated in the OM.\n- If a requested field is not found, return null.\n- Keep subject-property statistics separate from market and submarket statistics.\n- Market rent is not subject rent; market vacancy is not subject occupancy; market cap rate is not subject cap rate.\n- Preserve stated units and values.\n- Do not create financial assumptions for a vacant property.\n- Purchase price, price/SF, NOI, rent, and cap rate may only be populated when explicitly supported by the OM.\n\nSUBJECT PROPERTY\nExtract address, building size, occupancy, clear height, dock-high doors, ground-level doors, parking, power, year built, and year renovated when explicitly stated.\n\nMARKET / SUBMARKET\nKeep broader Central Los Angeles market data separate from Pico Rivera submarket data. Do not mix the two.\n\nREQUIRED RISK ANALYSIS\nCreate a risk_flags entry for each category:\n1. Rent PSF vs Market\n2. Cap Rate\n3. Clear Height\n4. Vacancy\n5. Price/SF vs Comparable Market Data\n\nUse low, moderate, high, critical, or not_evaluable. If data is insufficient, use not_evaluable and explain what is missing.\n\nVACANCY\n0% occupancy means the subject is fully vacant. Explain lease-up, downtime, carrying-cost, and near-term income risk where applicable.\n\nCROSS-DOCUMENT VALIDATION\nCompare narrative statements against specification tables, regional-distance tables, market tables, site plans, investment highlights, executive summary, and property description. Capture conflicting facts in validation_warnings rather than silently choosing one.\n\nOPPORTUNITY GUARDRAIL\nOnly identify opportunities directly supported by the OM. Do not propose subdivision, redevelopment, expansion, rezoning, alternative uses, or major physical modifications unless explicitly supported. Put unsupported concepts requiring entitlement, engineering, zoning, legal, or physical analysis under key_due_diligence_items.\n\nINVESTMENT ANALYSIS\nProduce strengths, weaknesses, opportunities, key due diligence items, investment thesis, recommended investor profile, recommendation, and recommendation reason.\n\nThe recommendation MUST be exactly one of: BUY, CONSIDER, REVIEW, PASS, INSUFFICIENT_DATA.\n\nIf key financial information is unavailable and prevents reliable valuation, prefer REVIEW or INSUFFICIENT_DATA.\n\nHALLUCINATION GUARD\nBefore final output, verify every numeric value against the OM, ensure subject and market values are not mixed, ensure no missing financials were invented, ensure risks are grounded in facts, and ensure output follows the Structured Output Parser schema exactly.\n\nReturn ONLY the structured output required by the connected Structured Output Parser. Do not return markdown or commentary.\n\nOFFERING MEMORANDUM TEXT\n\n{{ $json.text }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [448, 0],
+      "id": "3216426b-8c2e-414a-943f-71c7b3163b17",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [304, 208],
+      "id": "1e5dfa0f-a349-4486-95de-71e7dcef26fb",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"property\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"address\": {\"type\": [\"string\", \"null\"]},\n        \"building_size_sf\": {\"type\": [\"number\", \"null\"]},\n        \"occupancy_percent\": {\"type\": [\"number\", \"null\"]},\n        \"clear_height_ft\": {\"type\": [\"number\", \"null\"]},\n        \"dock_high_doors\": {\"type\": [\"number\", \"null\"]},\n        \"ground_level_doors\": {\"type\": [\"number\", \"null\"]},\n        \"parking_spaces\": {\"type\": [\"number\", \"null\"]},\n        \"power_amps\": {\"type\": [\"number\", \"null\"]},\n        \"year_built\": {\"type\": [\"number\", \"null\"]},\n        \"year_renovated\": {\"type\": [\"number\", \"null\"]}\n      },\n      \"required\": [\"address\",\"building_size_sf\",\"occupancy_percent\",\"clear_height_ft\",\"dock_high_doors\",\"ground_level_doors\",\"parking_spaces\",\"power_amps\",\"year_built\",\"year_renovated\"]\n    },\n    \"financials\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"purchase_price\": {\"type\": [\"number\", \"null\"]},\n        \"price_per_sf\": {\"type\": [\"number\", \"null\"]},\n        \"subject_rent_psf\": {\"type\": [\"number\", \"null\"]},\n        \"stabilized_noi\": {\"type\": [\"number\", \"null\"]},\n        \"cap_rate_percent\": {\"type\": [\"number\", \"null\"]}\n      },\n      \"required\": [\"purchase_price\",\"price_per_sf\",\"subject_rent_psf\",\"stabilized_noi\",\"cap_rate_percent\"]\n    },\n    \"market\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"market_vacancy_percent\": {\"type\": [\"number\", \"null\"]},\n        \"market_availability_percent\": {\"type\": [\"number\", \"null\"]},\n        \"market_rent_psf\": {\"type\": [\"number\", \"null\"]},\n        \"submarket_vacancy_percent\": {\"type\": [\"number\", \"null\"]},\n        \"submarket_availability_percent\": {\"type\": [\"number\", \"null\"]},\n        \"submarket_rent_psf\": {\"type\": [\"number\", \"null\"]},\n        \"net_absorption_sf\": {\"type\": [\"number\", \"null\"]},\n        \"under_construction_sf\": {\"type\": [\"number\", \"null\"]},\n        \"rent_change_yoy_percent\": {\"type\": [\"number\", \"null\"]}\n      },\n      \"required\": [\"market_vacancy_percent\",\"market_availability_percent\",\"market_rent_psf\",\"submarket_vacancy_percent\",\"submarket_availability_percent\",\"submarket_rent_psf\",\"net_absorption_sf\",\"under_construction_sf\",\"rent_change_yoy_percent\"]\n    },\n    \"risk_flags\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"category\": {\"type\": \"string\"},\n          \"severity\": {\"type\": \"string\"},\n          \"subject_value\": {\"type\": [\"string\",\"number\",\"null\"]},\n          \"comparison_value\": {\"type\": [\"string\",\"number\",\"null\"]},\n          \"reason\": {\"type\": \"string\"},\n          \"source\": {\"type\": \"string\"}\n        },\n        \"required\": [\"category\",\"severity\",\"subject_value\",\"comparison_value\",\"reason\",\"source\"]\n      }\n    },\n    \"validation_warnings\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"field\": {\"type\": \"string\"},\n          \"description\": {\"type\": \"string\"},\n          \"value_1\": {\"type\": [\"string\",\"number\",\"null\"]},\n          \"source_1\": {\"type\": [\"string\",\"null\"]},\n          \"value_2\": {\"type\": [\"string\",\"number\",\"null\"]},\n          \"source_2\": {\"type\": [\"string\",\"null\"]},\n          \"recommended_action\": {\"type\": \"string\"}\n        },\n        \"required\": [\"field\",\"description\",\"value_1\",\"source_1\",\"value_2\",\"source_2\",\"recommended_action\"]\n      }\n    },\n    \"missing_critical_information\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"investment_analysis\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"strengths\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n        \"weaknesses\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n        \"opportunities\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n        \"key_due_diligence_items\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n        \"investment_thesis\": {\"type\": \"string\"},\n        \"recommended_investor_profile\": {\"type\": \"string\"},\n        \"recommendation\": {\"type\": \"string\", \"enum\": [\"BUY\",\"CONSIDER\",\"REVIEW\",\"PASS\",\"INSUFFICIENT_DATA\"]},\n        \"recommendation_reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"strengths\",\"weaknesses\",\"opportunities\",\"key_due_diligence_items\",\"investment_thesis\",\"recommended_investor_profile\",\"recommendation\",\"recommendation_reason\"]\n    }\n  },\n  \"required\": [\"property\",\"financials\",\"market\",\"risk_flags\",\"validation_warnings\",\"missing_critical_information\",\"investment_analysis\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [624, 208],
+      "id": "42c349e9-a26c-4b1f-ad28-cffd13a769ee",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json.output ?? $json;\n\nconst property = data.property || {};\nconst financials = data.financials || {};\nconst risks = data.risk_flags || [];\nconst investment = data.investment_analysis || {};\n\nconst requiredRiskCategories = [\n  \"Rent PSF vs Market\",\n  \"Cap Rate\",\n  \"Clear Height\",\n  \"Vacancy\",\n  \"Price/SF vs Comparable Market Data\"\n];\n\nconst normalize = (value) => String(value || \"\").toLowerCase().replace(/\\s+/g, \" \").trim();\nconst existingRiskNames = risks.map((r) => normalize(r.category));\nconst missingRiskCategories = requiredRiskCategories.filter((required) => !existingRiskNames.includes(normalize(required)));\n\nconst coreFinancialFields = [\"purchase_price\",\"price_per_sf\",\"subject_rent_psf\",\"stabilized_noi\",\"cap_rate_percent\"];\nconst financialFieldsPresent = coreFinancialFields.filter((field) => financials[field] !== null && financials[field] !== undefined);\n\nconst occupancy = property.occupancy_percent !== null && property.occupancy_percent !== undefined ? Number(property.occupancy_percent) : null;\nconst buildingSize = property.building_size_sf !== null && property.building_size_sf !== undefined ? Number(property.building_size_sf) : null;\nconst purchasePrice = financials.purchase_price !== null && financials.purchase_price !== undefined ? Number(financials.purchase_price) : null;\nconst stabilizedNoi = financials.stabilized_noi !== null && financials.stabilized_noi !== undefined ? Number(financials.stabilized_noi) : null;\n\nconst subjectVacancyPercent = occupancy !== null ? Number((100 - occupancy).toFixed(2)) : null;\nconst calculatedPricePerSf = purchasePrice !== null && buildingSize !== null && buildingSize > 0 ? Number((purchasePrice / buildingSize).toFixed(2)) : null;\nconst calculatedCapRatePercent = stabilizedNoi !== null && purchasePrice !== null && purchasePrice > 0 ? Number(((stabilizedNoi / purchasePrice) * 100).toFixed(2)) : null;\n\nconst rentRisk = risks.find((r) => normalize(r.category) === normalize(\"Rent PSF vs Market\"));\nconst capRateRisk = risks.find((r) => normalize(r.category) === normalize(\"Cap Rate\"));\n\nconst allowedRecommendations = [\"BUY\",\"CONSIDER\",\"REVIEW\",\"PASS\",\"INSUFFICIENT_DATA\"];\n\nconst checks = {\n  required_risk_categories_present: missingRiskCategories.length === 0,\n  missing_risk_categories: missingRiskCategories,\n  financial_fields_present: financialFieldsPresent.length,\n  financial_fields_total: coreFinancialFields.length,\n  financial_data_complete: financialFieldsPresent.length === coreFinancialFields.length,\n  subject_vacancy_percent: subjectVacancyPercent,\n  rent_vs_market_evaluable: financials.subject_rent_psf !== null && financials.subject_rent_psf !== undefined,\n  cap_rate_calculable: stabilizedNoi !== null && purchasePrice !== null && purchasePrice > 0,\n  price_per_sf_calculable: purchasePrice !== null && buildingSize !== null && buildingSize > 0,\n  rent_risk_consistent: financials.subject_rent_psf == null ? normalize(rentRisk?.severity) === \"not_evaluable\" : true,\n  cap_rate_risk_consistent: stabilizedNoi == null || purchasePrice == null ? normalize(capRateRisk?.severity) === \"not_evaluable\" : true,\n  recommendation_valid: allowedRecommendations.includes(investment.recommendation)\n};\n\nchecks.all_critical_checks_passed = checks.required_risk_categories_present && checks.rent_risk_consistent && checks.cap_rate_risk_consistent && checks.recommendation_valid;\n\nconst calculatedMetrics = {\n  subject_vacancy_percent: subjectVacancyPercent,\n  price_per_sf: calculatedPricePerSf,\n  price_per_sf_calculated: calculatedPricePerSf !== null,\n  cap_rate_percent: calculatedCapRatePercent,\n  cap_rate_calculated: calculatedCapRatePercent !== null\n};\n\nreturn { output: { ...data, calculated_metrics: calculatedMetrics, deterministic_validation: checks } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 144],
+      "id": "d093b516-4a57-48b2-835d-e272f7c98a5b",
+      "name": "Deterministic Validation"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {"main": [[{"node": "Extract from File", "type": "main", "index": 0}]]},
+    "Extract from File": {"main": [[{"node": "AI Agent", "type": "main", "index": 0}]]},
+    "AI Agent": {"main": [[{"node": "Deterministic Validation", "type": "main", "index": 0}]]},
+    "OpenAI Chat Model": {"ai_languageModel": [[{"node": "AI Agent", "type": "ai_languageModel", "index": 0}]]},
+    "Structured Output Parser": {"ai_outputParser": [[{"node": "AI Agent", "type": "ai_outputParser", "index": 0}]]},
+    "Deterministic Validation": {"main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1", "binaryMode": "separate"},
+  "nodeGroups": [],
+  "tags": []
+}
