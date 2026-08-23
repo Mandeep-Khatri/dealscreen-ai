@@ -1,96 +1,118 @@
 # DealScreen AI
 
-**AI-powered industrial real estate deal screening and underwriting assistant.**
+> AI-assisted industrial real estate deal screening that turns an Offering Memorandum into a structured, reviewable underwriting brief.
+
+[![Status](https://img.shields.io/badge/status-prototype-blue)](https://github.com/Mandeep-Khatri/dealscreen-ai)
+[![Frontend](https://img.shields.io/badge/frontend-Lovable-ff69b4)](https://industrial-dealscreen.lovable.app)
+[![Workflow](https://img.shields.io/badge/automation-n8n-orange)](./n8n/industrial-deal-screening-workflow.json)
+[![AI](https://img.shields.io/badge/AI-OpenAI-black)](./docs/N8N_WORKFLOW_ARCHITECTURE.md)
 
 **Live Demo:** https://industrial-dealscreen.lovable.app
 
-DealScreen AI helps investment teams review industrial real estate opportunities faster by turning offering memorandums and market inputs into structured property data, financial insights, market context, validation checks, and risk flags.
+DealScreen AI is a decision-support prototype for industrial commercial real estate underwriting. It extracts property and market facts from an Offering Memorandum, separates subject-property data from market data, evaluates key investment risks, identifies missing underwriting inputs, and returns a structured recommendation for human review.
 
-## Problem
+---
 
-Industrial real estate underwriting is often manual and fragmented. Analysts must review long offering memorandums, extract property and financial information, compare market data, identify missing assumptions, and assess risk before a deal can move forward.
+## Why This Project Exists
 
-## Solution
+Industrial deal screening is often repetitive and fragmented. An analyst may need to read a long OM, copy physical specifications into a model, separate market statistics from subject-property facts, identify missing financial data, compare risks, and prepare a first-pass recommendation before deeper underwriting can begin.
 
-DealScreen AI creates an automated first-pass screening workflow that:
+DealScreen AI automates that first screening pass while intentionally refusing to invent missing numbers.
 
-1. Ingests deal documents and property information.
-2. Extracts key property, tenant, lease, and financial data.
-3. Organizes market indicators and comparable information.
-4. Evaluates investment and operating risks.
-5. Validates extracted information and flags missing data.
-6. Returns structured output for a human analyst to review.
+### Core objective
 
-## Product Flow
+**Reduce document-review time without reducing underwriting discipline.**
+
+The system is designed to answer questions such as:
+
+- What are the key physical characteristics of the asset?
+- Is the property occupied or vacant?
+- Which core financial fields are actually present in the OM?
+- How does the subject compare with the broader market and local submarket?
+- Which required risk categories are evaluable?
+- Are there contradictions inside the document?
+- What information is still required before an investment decision can be made?
+
+---
+
+## Product Demo
+
+The deployed Lovable interface presents the analysis as an investment-screening dashboard.
+
+**Try it:** https://industrial-dealscreen.lovable.app
+
+The current prototype supports views for:
+
+- Investment recommendation
+- Property fundamentals
+- Financial underwriting readiness
+- Market and submarket intelligence
+- Investment risk analysis
+- Missing critical information
+- Strengths, weaknesses, opportunities, and due diligence
+- Investment thesis and recommended investor profile
+- Structured JSON download / export workflow
+
+### Prototype case study
+
+The project has been tested against an industrial property at **8640 Slauson Avenue, Pico Rivera, CA 90660**.
+
+| Extracted field | Prototype result |
+|---|---:|
+| Building size | 65,014 SF |
+| Occupancy | 0% |
+| Clear height | 18 ft |
+| Dock-high doors | 10 |
+| Ground-level doors | 1 |
+| Parking | 89 spaces |
+| Power | 1,200 amps |
+| Year built | 1960 |
+| Year renovated | 2024 |
+
+For this case, the engine returns **`INSUFFICIENT_DATA`** because the OM does not provide enough verified financial information to complete reliable valuation analysis. That is intentional behavior: missing purchase price, NOI, subject rent, or cap-rate inputs remain missing rather than being fabricated.
+
+---
+
+## Architecture
 
 ```mermaid
 flowchart LR
-    A[Investment Analyst] --> B[Lovable Frontend]
-    B --> C[n8n Webhook]
-    C --> D[PDF Extraction]
-    D --> E[AI Underwriting Agent]
-    E --> F[Structured Output Parser]
-    F --> G[Deterministic Validation]
-    G --> H[Structured JSON]
-    H --> B
+    U[Investment Analyst] --> L[Lovable Frontend]
+    L --> W[n8n Webhook]
+    W --> P[PDF Text Extraction]
+    P --> A[AI Underwriting Agent]
+    M[OpenAI Model] -. language model .-> A
+    S[Structured Output Parser] -. schema .-> A
+    A --> V[Deterministic Validation]
+    V --> R[Structured JSON Response]
+    R --> L
+    L --> D[Decision-Support Dashboard]
 ```
 
-## Key Features
+The design deliberately combines **AI reasoning** with **schema enforcement** and **deterministic post-processing** instead of relying on a single free-form model response.
 
-- Offering Memorandum review and structured extraction
-- Property and building data extraction
-- Financial information screening
-- Market vacancy, rent, supply, and absorption analysis
-- Risk flag generation
-- Missing-data and assumption validation
-- Structured JSON output for downstream applications
-- Human-in-the-loop review
-- n8n workflow automation
-- Lovable analyst-facing dashboard
-- JSON download / export workflow
-- Investment committee reporting interface
+### Processing pipeline
 
-## Live Frontend
+1. **Webhook intake** - receives the uploaded deal document.
+2. **PDF extraction** - extracts source text for analysis.
+3. **AI underwriting agent** - performs industrial CRE extraction and investment screening.
+4. **Structured output parser** - forces the response into a defined JSON contract.
+5. **Deterministic validation** - checks required risk categories, financial-data availability, calculated metrics, risk consistency, and recommendation validity.
+6. **Frontend presentation** - renders results in a reviewable underwriting dashboard.
 
-The DealScreen AI frontend is built in Lovable and is available at:
+More detail:
 
-**https://industrial-dealscreen.lovable.app**
+- [System architecture](./docs/ARCHITECTURE.md)
+- [n8n workflow architecture](./docs/N8N_WORKFLOW_ARCHITECTURE.md)
+- [Lovable frontend](./docs/LOVABLE_FRONTEND.md)
+- [Decision engine](./docs/DECISION_ENGINE.md)
+- [Demo walkthrough](./docs/DEMO_WALKTHROUGH.md)
 
-The prototype presents:
-
-- Property and recommendation summary
-- Financial underwriting
-- Investment risk analysis
-- Market intelligence
-- Underwriting readiness / missing information
-- New Analysis
-- Download JSON
-- Export
-- IC Report
-
-See [`docs/LOVABLE_FRONTEND.md`](docs/LOVABLE_FRONTEND.md) for the frontend architecture and user flow.
-
-## Example Property
-
-The prototype workflow has been tested with an industrial property at **8640 Slauson Avenue, Pico Rivera, California**.
-
-Example extracted fields include:
-
-- Building size: 65,014 SF
-- Occupancy: 0%
-- Clear height: 18 ft
-- Dock-high doors: 10
-- Ground-level doors: 1
-- Parking: 89 spaces
-- Power: 1,200 amps
-- Year built: 1960
-- Renovated: 2024
-
-The system is designed to mark missing financial inputs as unavailable rather than inventing values.
+---
 
 ## Structured Output
 
-The AI workflow returns structured underwriting data including:
+The core AI contract includes:
 
 ```json
 {
@@ -100,57 +122,95 @@ The AI workflow returns structured underwriting data including:
   "risk_flags": [],
   "validation_warnings": [],
   "missing_critical_information": [],
-  "investment_analysis": {},
-  "calculated_metrics": {},
-  "deterministic_validation": {}
+  "investment_analysis": {}
 }
 ```
 
-### Reliability Rules
+The deterministic validation node then adds calculated metrics and rule-based validation results before returning the final response.
 
-DealScreen AI follows several important validation rules:
+---
 
-- Never guess missing values.
-- Preserve original units when possible.
-- Keep subject-property and market statistics separate.
-- Do not use market rent as subject rent.
-- Do not fabricate purchase price, NOI, or cap rate.
-- Mark non-evaluable risks when required information is unavailable.
-- Surface validation warnings and unusual assumptions.
-- Run deterministic checks after the AI analysis.
-- Keep AI output reviewable by a human analyst.
+## Required Risk Framework
 
-## Architecture
+The screening engine explicitly evaluates five required categories:
 
-```mermaid
-flowchart TD
-    U[User / Analyst] --> L[Lovable Frontend]
-    L --> W[n8n Webhook]
-    W --> P[PDF Text Extraction]
-    P --> A[AI Underwriting Agent]
-    M[OpenAI Chat Model] -.-> A
-    S[Structured Output Parser] -.-> A
-    A --> V[Deterministic Validation]
-    V --> J[Structured JSON Response]
-    J --> L
-    L --> R[Analyst Review / IC Output]
+| Risk category | Evaluation rule |
+|---|---|
+| Rent PSF vs Market | Evaluate only when subject rent is actually available |
+| Cap Rate | Evaluate only when verified inputs support it |
+| Clear Height | Evaluate the subject's stated clear height and functional implications |
+| Vacancy | Evaluate subject occupancy/vacancy and lease-up exposure |
+| Price/SF vs Comparable Market Data | Evaluate only when subject pricing is available |
+
+If a category cannot be evaluated from the source document, the workflow uses **`not_evaluable`** and explains what information is missing.
+
+---
+
+## Reliability & Hallucination Guardrails
+
+A core design goal is to make the system conservative when the source document is incomplete.
+
+### Extraction guardrails
+
+- Never invent missing numeric values.
+- Return `null` when a requested fact is absent.
+- Preserve subject-property data separately from market and submarket data.
+- Do not substitute market rent for subject rent.
+- Do not fabricate purchase price, NOI, price/SF, or cap rate.
+- Do not create hypothetical tenant income for a vacant asset.
+
+### Cross-document validation
+
+The workflow is instructed to compare facts across the OM and surface contradictory statements in `validation_warnings` rather than silently choosing one.
+
+### Structured schema
+
+The model output is constrained to a defined JSON schema for property, financials, market data, risk flags, validation warnings, missing information, and investment analysis.
+
+### Deterministic validation
+
+A JavaScript validation node independently checks items including:
+
+- Presence of all five required risk categories
+- Financial-field completeness
+- Subject vacancy calculation
+- Price/SF calculability
+- Cap-rate calculability
+- Consistency of non-evaluable rent and cap-rate risks
+- Recommendation validity
+
+This creates a second validation layer after the LLM response.
+
+---
+
+## Recommendation Framework
+
+The investment recommendation is constrained to one of five values:
+
+```text
+BUY
+CONSIDER
+REVIEW
+PASS
+INSUFFICIENT_DATA
 ```
 
-Detailed architecture:
+The system is not allowed to issue a confident recommendation simply because the property has attractive physical characteristics. When critical financial inputs prevent reliable underwriting, it can return `REVIEW` or `INSUFFICIENT_DATA` instead.
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- [`docs/N8N_WORKFLOW_ARCHITECTURE.md`](docs/N8N_WORKFLOW_ARCHITECTURE.md)
-- [`docs/LOVABLE_FRONTEND.md`](docs/LOVABLE_FRONTEND.md)
+---
 
-## Technology
+## Technology Stack
 
-- **Frontend:** Lovable
-- **Workflow automation / backend orchestration:** n8n
-- **AI layer:** OpenAI language model based extraction and analysis
-- **Validation:** Structured Output Parser + deterministic JavaScript checks
-- **Integration:** Webhooks / APIs
-- **Data format:** JSON
-- **Architecture:** AI-assisted underwriting with human review
+| Layer | Technology | Role |
+|---|---|---|
+| Frontend | Lovable | Analyst-facing screening dashboard |
+| Workflow orchestration | n8n | Document intake, AI orchestration, validation, response |
+| AI | OpenAI model via n8n | Extraction and underwriting analysis |
+| Output control | Structured Output Parser | JSON schema enforcement |
+| Validation | JavaScript / n8n Code node | Deterministic checks and calculations |
+| Integration | Webhook / JSON | Frontend-to-workflow communication |
+
+---
 
 ## Repository Structure
 
@@ -162,7 +222,9 @@ dealscreen-ai/
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── N8N_WORKFLOW_ARCHITECTURE.md
-│   └── LOVABLE_FRONTEND.md
+│   ├── LOVABLE_FRONTEND.md
+│   ├── DECISION_ENGINE.md
+│   └── DEMO_WALKTHROUGH.md
 ├── n8n/
 │   ├── README.md
 │   └── industrial-deal-screening-workflow.json
@@ -170,32 +232,74 @@ dealscreen-ai/
     └── example-output.json
 ```
 
-## Security
+---
 
-Do not commit:
+## Run the Public Workflow Template
 
-- API keys
-- `.env` files
-- passwords or credentials
-- private webhook secrets
-- confidential offering memorandums
-- proprietary market data
+The repository contains a **sanitized public n8n workflow template**. Credential references and instance-specific metadata are intentionally excluded.
 
-Use `.env.example` to document required configuration without exposing secrets.
+1. Clone the repository.
+2. Open n8n.
+3. Import `n8n/industrial-deal-screening-workflow.json`.
+4. Configure your own OpenAI credential in the OpenAI Chat Model node.
+5. Review the webhook path and security settings for your environment.
+6. Activate the workflow only after configuration is complete.
+7. Send a PDF Offering Memorandum to the webhook using your own frontend or API client.
+
+> The public workflow is intentionally safe to share and does not contain production credentials, private webhook secrets, or confidential Offering Memoranda.
+
+---
+
+## Security & Data Handling
+
+Never commit:
+
+- API keys or access tokens
+- `.env` files containing secrets
+- n8n credential objects
+- private webhook authentication values
+- confidential Offering Memoranda
+- proprietary market-data exports
+- personally identifiable or restricted deal information
+
+The workflow committed here is a public-safe version intended for demonstration and review.
+
+---
+
+## Current Limitations
+
+This is a screening prototype, not a complete acquisition underwriting platform. The current project does not claim to replace:
+
+- Full cash-flow modeling
+- Legal, title, environmental, engineering, or zoning review
+- Third-party market-data verification
+- Investment committee approval
+- Professional investment judgment
+
+The Lovable frontend is deployed separately; this repository currently focuses on the workflow, architecture, validation logic, sample output, and product documentation.
+
+---
+
+## Roadmap
+
+- Source-level citations for extracted facts
+- Automated lease and sale comparable ingestion
+- Sensitivity and scenario analysis
+- Debt / financing analysis
+- Configurable investment criteria and scoring
+- Excel underwriting export
+- Investment committee memo generation
+- Persistent deal history and comparison dashboard
+- Automated QA tests for workflow outputs
+
+---
 
 ## Project Status
 
-This repository contains the prototype architecture and workflow for an AI-powered industrial real estate fellowship / hackathon project. The system is being developed as a decision-support tool, not as a replacement for professional investment judgment.
+**Prototype / hackathon portfolio project.**
 
-## Future Improvements
-
-- Automated rent and sales comparable collection
-- Sensitivity analysis and scenario modeling
-- Debt and financing analysis
-- Investment scoring
-- Source-level citations for every extracted field
-- Export to Excel and expanded investment committee memo formats
+DealScreen AI demonstrates how a human-in-the-loop AI workflow can accelerate industrial real estate screening while preserving conservative underwriting behavior when the source material is incomplete.
 
 ## Disclaimer
 
-DealScreen AI is a prototype decision-support system. Outputs should be independently verified before being used for investment decisions.
+DealScreen AI is a decision-support prototype. All outputs should be independently verified before being used for investment, lending, legal, environmental, or other professional decisions.
