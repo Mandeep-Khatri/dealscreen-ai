@@ -1,0 +1,29 @@
+{
+  "property": {
+    "address": "8640 Slauson Avenue, Pico Rivera, CA 90660",
+    "building_sf": 65014,
+    "occupancy_pct": 0,
+    "dock_high_doors": 10,
+    "ground_level_doors": 1,
+    "parking_spaces": 89,
+    "power_amps": 1200,
+    "year_built": 1960,
+    "year_renovated": 2024
+  },
+  "financials": {
+    "noi": null,
+    "noi_status": "not_available",
+    "cap_rate": null,
+    "cap_rate_status": "not_calculable"
+  },
+  "market": {
+    "status": "requires_external_market_data"
+  },
+  "risk_flags": [
+    {
+      "category": "occupancy",
+      "severity": "high",
+      "message": "Property is currently vacant and requires lease-up analysis."
+    }
+  ]
+}
